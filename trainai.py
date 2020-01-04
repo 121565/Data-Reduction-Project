@@ -13,7 +13,6 @@ pygame.init()
 win = pygame.display.set_mode((500, 500))
 pygame.display.set_caption("Checkerboard")
 board = pygame.image.load('C:/Users/eelke/Desktop/Python/PyGame/Checkers/check.jpg')
-menuscreen  = pygame.image.load('C:/Users/eelke/Desktop/Python/PyGame/Checkers/menuscreen.jpg')
 Activeboard = np.zeros((8,8),'int')
 Coordboard = [[x,y] for x in range(1,9) for y in range(1,9)]
 isLightOn = False
@@ -535,6 +534,7 @@ run = True
 pieces = [redpieces,whitepieces]
 
 '''
+#Loading a saved tree
 savedtree = treebranch(Activeboard,[],redpieces,whitepieces)
 savedtree.tree= getallposmoves(pieces,turn,Activeboard)
 MCTS(savedtree,1000,turn)
@@ -544,10 +544,6 @@ with open('saved.tree', 'rb') as gametree_file:
     savedtree = pickle.load(gametree_file)
 gametree = savedtree
 '''
-whitetime = 0
-redtime = 0
-avgredtime = 0
-avgwhitetime = 0
 
 while run:
 
@@ -587,16 +583,12 @@ while run:
         player1.block[0]+=1
 
     if greenLoop == 0:
-    #if keys[pygame.K_SPACE] and greenLoop == 0:
-        #makeGameTree(redpieces,whitepieces,turn,Activeboard)
         pieces = [redpieces,whitepieces]
         if turn == 'white' and not isPlayer2:
             greenLoop = 6
 
-            #Recording how long it takes for the system to run
-            start_time = time.time()
-
             '''
+            #A random move
             greenblocks=[]
             tree=getallposmoves(pieces,turn,Activeboard)
             for branch in tree:
@@ -606,16 +598,14 @@ while run:
             bestmove = randommove
             '''
 
+            #The Minimax move
             bestmove = makeGameTree(redpieces,whitepieces,turn,Activeboard,6).move
+
             Activeboard = boardupdate(Activeboard,whitepieces[bestmove.blockIndex].position,bestmove,True)
             whitepieces[bestmove.blockIndex].update(bestmove.block)
             redpieces = remove_hit_pieces(redpieces,bestmove)
             turn = 'red'
             greenblocks = []
-
-            comptime = (time.time() - start_time)
-            avgwhitetime += comptime
-            whitetime+= 1
 
             '''
             newgametree=0
@@ -630,9 +620,7 @@ while run:
         elif turn =='red' and not isPlayer:
             greenLoop = 6
 
-            #Recording how long it takes for the system to run
-            start_time = time.time()
-
+            #The MCTS move
             gametree = treebranch(Activeboard,[],redpieces,whitepieces)
             gametree.tree= getallposmoves(pieces,turn,Activeboard)
             MCTS(gametree,300,turn)
@@ -646,6 +634,7 @@ while run:
             gametree = newgametree
             bestmove = gametree.move
 
+            #The Minimax move
             #bestmove = makeGameTree(redpieces,whitepieces,turn,Activeboard,6).move
             randommove=bestmove
 
@@ -654,10 +643,6 @@ while run:
             whitepieces = remove_hit_pieces(whitepieces,randommove)
             turn = 'white'
             greenblocks = []
-
-            comptime = (time.time() - start_time)
-            avgredtime += comptime
-            redtime+= 1
 
     if keys[pygame.K_SPACE] and greenLoop == 0:
         greenLoop = 1
@@ -728,8 +713,6 @@ while run:
                 # See if the cursor is on a piece white can move
                 greenblocks,isLightOn = check_options(player1.block[0],player1.block[1],player1.x,player1.y,turn,isLightOn,[redpieces,whitepieces],greenblocks)
 
-
-
     redrawGameWindow()
 
     if redpieces == []:
@@ -745,51 +728,12 @@ while run:
     if turn == 'white':
         if not isTurn(whitepieces,turn,[redpieces,whitepieces]):
             run = False
+
 '''
+#For saving a tree using pickle
 with open('saved.tree', 'wb') as tree_file:
   pickle.dump(savedtree, tree_file)
 '''
 
-print('The average red time is:' , avgredtime/redtime)
-print('The average white time is:', avgwhitetime/whitetime)
-'''
-Random:
-0.0017581738923725329,0.0022711502878289473
-red, with pruning:
-3: 0.05537698268890381
-4: 0.141553672877225
-5: 0.4076504945755005
-6: 0.7088731408119202,0.5651286401246723: 0.6370008904682962
-7: 1.173029797417777, 1.7727345724900563, 1.6583598709106446: 1.534708080272826
-8: 8.7664870262146, 4.469840049743652, 5.136863521907641: 6.124396865955298
-red, without pruning:
-3: 0.06582984924316407, 0.07512633800506592: 0.070478093624115
-4: 0.2138981819152832, 0.2175208806991577: 0.21570953130722045
-5: 1.2360222458839416, 0.6050410996312681, 0.9041809127444312: 0.9150814194198803
-6: 4.770390367507934, 4.374216675758362: 4.572303521633148
-7:
-MCST:
-200: 2.498007068634033,2.129901924133301, 2.842364881719862
-300:  2.964074273904165, 3.556319841316768 , 3.9272443094561176  win: 3/4 ai strength: 3  0.019581768247816298 0.039681719195458195
-300 : 3.138705940807567, 3.2421433771810224                     win: 2/4 ai strength: 4 0.06920909180360682 0.07967381477355957 0.12424707753317697
-                                                             win: 1.5/4 strength: 5   0.29236109026016727    0.25577683448791505
-                4.454690077088096                                win: 1.5/4  0.7215809363585252 0.7480172589421272 1.4140849330208518 1.0893983360259765
-'''
-print((2.964074273904165+ 3.556319841316768 + 3.9272443094561176+3.138705940807567+ 3.2421433771810224)/5)
-
-print((0.019581768247816298 + 0.039681719195458195)/2)
-print((0.06920909180360682 + 0.07967381477355957+ 0.12424707753317697)/3)
-print((0.29236109026016727  +  0.25577683448791505))
-print((0.7215809363585252+ 0.7480172589421272 +1.4140849330208518 +1.0893983360259765))
-import matplotlib.pyplot as plt
-x = [3,4,5,6]
-y = [0.75,0.5,0.375,0.25]
-plt.plot(x, y)
-
-plt.xlabel('Depth of the tree')
-plt.ylabel('Winrate of MCTS algorithm')
-plt.title('Winrate for MCTS against Minimax')
-plt.legend()
-plt.show()
 
 pygame.quit()
